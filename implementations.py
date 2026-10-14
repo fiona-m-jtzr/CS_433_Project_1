@@ -24,7 +24,7 @@ def mean_squared_error_gd(y, x, initial_w, max_iters, gamma):
     N = len(y)
     for n_iter in range(max_iters):
         e = y - x@w
-        grad = 1/N * x.T@e
+        grad = 1/N * (x.T@e)
         w = w - gamma * grad
 
     e = y - x@w
@@ -52,7 +52,7 @@ def mean_squared_error_sgd(y, x, initial_w, max_iters, gamma):
     for n_iter in range(max_iters):
         idx = np.random.randint(N)
         e = y[idx] - x[idx]@w
-        grad = x[idx].T@e
+        grad = x[idx].T*e
         w = w - gamma * grad
 
     e = y - x@w
