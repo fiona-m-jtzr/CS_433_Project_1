@@ -1,2 +1,11 @@
-# CS_433_Project_1
-Implementation of standard machine learning algorithms to determine the risk of a person in developing CVD based on features of their personal lifestyle factors.
+# Description
+This repository inventoriates our analyses on the provided health dataset.
+
+# Goal
+The goal is to make the best predictions and win the competition
+
+# Website
+The competition website is : https://www.aicrowd.com/challenges/epfl-machine-learning-project-1
+
+# Overleaf
+https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
