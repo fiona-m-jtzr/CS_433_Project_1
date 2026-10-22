@@ -207,6 +207,7 @@ def load_data_train(data_dir, imputation=True):
 
     if imputation:
 
+        mask_nan = np.zeros(data_x.shape[1])
         for idx, col_name in enumerate(derived_var_header):
                 
             col = data_x[:, idx]
