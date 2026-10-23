@@ -65,7 +65,7 @@ def update_codes(x, columns, missing_codes, zero_codes):
     Replace survey answer codes for "Don't know / Not sure" and "Refused" with NaN, and "None" with 0.
 
     Args:
-        x: numpu array of shape (N,D)
+        x: numpy array of shape (N,D)
         columns: list of length D, the column names. 
         missing_codes: dict mapping column name with code list that should become NaN.
         zero_codes: dict mapping column name with code that should become 0.
@@ -106,3 +106,29 @@ def remove_columns(x, columns, remove):
     columns_reduced = [columns[i] for i in keep]
 
     return x_reduced, columns_reduced
+
+
+def clean_data(x_train, x_test, columns, remove, code_exceptions):
+    """
+    Remove columns and replace survey codes. Codes are fitted on x_train only.
+    
+    Args:
+        x_train: numpy array of shape (N,D), training data
+        x_test: numpy array of shape (N,D), test data
+        columns: list of length D, the column names.
+        remove: list of column names to be removed 
+        code_exceptions: dictionary for column names where the infer_codes dont apply
+    
+    Returns:
+        x_train: cleaned x_train
+        x_test: cleand x_test
+        columns_reduced: list of column names after remove_columns()
+    """
+    x_train, columns_reduced = remove_columns(x_train, columns, remove)
+    x_test, _ = remove_columns(x_test, columns, remove)
+
+    missing_codes, zero_codes = fit_codes(x_train, columns, code_exceptions)
+    x_train = update_codes(x_train, columns_reduced, missing_codes, zero_codes)
+    x_test = update_codes(x_test, columns_reduced, missing_codes, zero_codes)
+
+    return x_train, x_test, columns_reduced

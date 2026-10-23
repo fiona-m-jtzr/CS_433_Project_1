@@ -92,6 +92,3 @@ CODE_EXCEPTIONS = {
     "SCNTWRK1": ([97, 99], 98),       # 1-96 = hours, 97 = don't know, 98 = zero
     "SCNTLWK1": ([97, 99], 98),
 }
-
-
-
