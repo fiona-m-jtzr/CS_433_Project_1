@@ -31,10 +31,12 @@ DATA_DIR = ""
 #Preprocessing
 imputation = False
 
-#Optimization params
-max_iters = 500
-gamma = 0.01
-lambda_ = 0.5
+#Pipeline choice
+launch_pure_log = True
+launch_reg_log = True
+launch_pure_log_sgd = True
+launch_reg_log_sgd = True
+launch_kNN = True
 
 
 ####################### ANALYSIS PIPELINE #######################
@@ -86,46 +88,96 @@ if __name__ == "__main__" :
 
 
     #### LOGISTIC REGRESSION ####
+    #Optimization params
+    max_iters = 500
+    gamma = 0.01
+    lambda_ = 0.5
 
     #Pure logistic regression
-    w_log, loss_log = logistic_regression(y_tr, tx_tr, initial_w, max_iters, gamma)
-    print("Pure logistic regression: OK \n")
+    if launch_pure_log == True :
+        w_log, loss_log = logistic_regression(y_tr, tx_tr, initial_w, max_iters, gamma)
+        print("Pure logistic regression: OK \n")
+
+        #Class choice
+        logistic_mask_log = sigmoid(tx_te @ w_log) >= 0.5
+        y_te_pred_log = np.zeros((np.shape(tx_te)[0],1))
+        y_te_pred_log[logistic_mask_log] = 1
+
+        #Confusion matrix display
+        confusion_matrix_log, confusion_matrix_ratio_log = confusion_matrix_custom(y_te, y_te_pred_log)
+        display_confusion_matrix(confusion_matrix_log, confusion_matrix_ratio_log, "pure_logistic")
+
 
     #Penalized logistic regression
-    w_log_reg, loss_log_reg = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma)
-    print("Penalized logistic regression: OK \n")
+    if launch_reg_log == True :
+        w_log_reg, loss_log_reg = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma)
+        print("Penalized logistic regression: OK \n")
+
+        #Class choice
+        logistic_mask_log_reg = sigmoid(tx_te @ w_log_reg) >= 0.5
+        y_te_pred_log_reg = np.zeros((np.shape(tx_te)[0],1))
+        y_te_pred_log_reg[logistic_mask_log_reg] = 1
+
+        #Confusion matrix display
+        confusion_matrix_log_reg, confusion_matrix_ratio_log_reg = confusion_matrix_custom(y_te, y_te_pred_log_reg)
+        display_confusion_matrix(confusion_matrix_log_reg, confusion_matrix_ratio_log, "reg_logistic")
 
 
-    #Results
-    #Pure logistic
-    #Class choice
-    logistic_mask_log = sigmoid(tx_te @ w_log) >= 0.5
-    y_te_pred_log = np.zeros((np.shape(tx_te)[0],1))
-    y_te_pred_log[logistic_mask_log] = 1
 
-    #Display
-    plot_heatmap(y_te, y_te_pred_log, "pure_logistic")
+    #### LOGISTIC REGRESSION SGD ####
 
-    #Reg logistic
-    #Class choice
-    logistic_mask_log_reg = sigmoid(tx_te @ w_log_reg) >= 0.5
-    y_te_pred_log_reg = np.zeros((np.shape(tx_te)[0],1))
-    y_te_pred_log_reg[logistic_mask_log_reg] = 1
+    #Pure logistic regression sgd
+    if launch_pure_log_sgd == True :
+        #Optimization params
+        max_iters = 500
+        gamma = 5000
+        w_log_sgd, losses_train_log_sgd, losses_test_log_sgd = logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, initial_w, max_iters, gamma)
+        print("Pure logistic regression SGD: OK \n")
 
-    #Display
-    plot_heatmap(y_te, y_te_pred_log_reg, "reg_logistic")
+        #Losses display
+        display_losses(losses_train_log_sgd, losses_test_log_sgd, "logistic_SGD")
 
+        #Class choice
+        logistic_mask_log_sgd = sigmoid(tx_te @ w_log_sgd) >= 0.5
+        y_te_pred_log_sgd = np.zeros((np.shape(tx_te)[0],1))
+        y_te_pred_log_sgd[logistic_mask_log_sgd] = 1
+
+        #Display
+        confusion_matrix_log_sgd, confusion_matrix_ratio_log_sgd = confusion_matrix_custom(y_te, y_te_pred_log_sgd)
+        display_confusion_matrix(confusion_matrix_log_sgd, confusion_matrix_ratio_log, "pure_logistic_SGD")
+
+    #Penalized logistic regression sgd
+    if launch_reg_log_sgd == True :
+        #Optimization params
+        max_iters = 500
+        gamma = 5000
+        lambda_ = 0.0000005
+        w_log_reg_sgd, losses_train_log_reg_sgd, losses_test_log_reg_sgd = reg_logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, lambda_, initial_w, max_iters, gamma)
+        print("Penalized logistic regression SGD: OK \n")
+
+        #Losses display
+        display_losses(losses_train_log_reg_sgd, losses_test_log_reg_sgd, "logistic_regularized_SGD")
+
+        #Class choice
+        logistic_mask_log_reg_sgd = sigmoid(tx_te @ w_log_reg_sgd) >= 0.5
+        y_te_pred_log_reg_sgd = np.zeros((np.shape(tx_te)[0],1))
+        y_te_pred_log_reg_sgd[logistic_mask_log_reg_sgd] = 1
+
+        #Confusion matrix display
+        confusion_matrix_log_reg_sgd, confusion_matrix_ratio_log_reg_sgd = confusion_matrix_custom(y_te, y_te_pred_log_reg_sgd)
+        display_confusion_matrix(confusion_matrix_log_reg_sgd, confusion_matrix_ratio_log, "reg_logistic_SGD")
 
 
     #### kNN ####
+    if launch_kNN == True :
+        #Fit
+        neigh = sklearn.neighbors.KNeighborsClassifier(n_neighbors=1)
+        neigh.fit(x_tr, y_tr.ravel())
 
-    #Fit
-    neigh = sklearn.neighbors.KNeighborsClassifier(n_neighbors=1)
-    neigh.fit(x_tr, y_tr.ravel())
+        #Predict
+        y_te_pred_kNN = neigh.predict(x_te)
+        print("kNN: OK \n")
 
-    #Predict
-    y_te_pred_kNN = neigh.predict(x_te)
-    print("kNN: OK \n")
-
-    #Results
-    plot_heatmap(y_te, y_te_pred_kNN, "kNN")
+        #Confusion matrix display
+        confusion_matrix_kNN, confusion_matrix_ratio_kNN = confusion_matrix_custom(y_te, y_te_pred_kNN)
+        display_confusion_matrix(confusion_matrix_kNN, confusion_matrix_ratio_log, "kNN")
