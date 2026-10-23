@@ -182,8 +182,8 @@ def standardize(col: np.ndarray) -> tuple[np.ndarray, float, float]:
 def load_data_train(data_dir: str, imputation_threshold: float = 0.2) -> tuple[np.ndarray, np.ndarray, dict, dict, np.ndarray, dict, dict]:
     """Load data for training."""
 
-    print('Hello!')
-
+    print(f'Starting data cleaning with imputation threshold set to {imputation_threshold}.')
+    
     path_dataset_x = os.path.join(data_dir, "x_train.csv")
     path_dataset_y = os.path.join(data_dir, "y_train.csv")
 
@@ -197,8 +197,7 @@ def load_data_train(data_dir: str, imputation_threshold: float = 0.2) -> tuple[n
     missing_codes, zero_codes = fit_codes(data_x_reduced, header_reduced, d.CODE_EXCEPTIONS)
     data_x_nan_val = update_codes(data_x_reduced, header_reduced, missing_codes, zero_codes)
 
-    print('First steps of data cleaning done!')
-    print(data_x_nan_val.shape)
+    print(f'First steps of data cleaning done! The data matrix has shape {data_x_nan_val.shape}.')
 
     # Process each column according to specifications
     processed_cols = []
@@ -207,13 +206,11 @@ def load_data_train(data_dir: str, imputation_threshold: float = 0.2) -> tuple[n
     cat_params = {}
         
     for idx, col_name in enumerate(header_reduced):
-        print(col_name)
         col = data_x_nan_val[:, idx]
 
         nan_frac = np.isnan(col).mean(axis=0)
 
         if nan_frac < imputation_threshold:
-            print('Entering the fraciton loop!')
             # Replace NaN with mean for continuous variables and standardize
             if col_name in d.CONT_VARS:
                 col_no_nan, mean_val = replace_nan_by_mean(col)
@@ -235,7 +232,7 @@ def load_data_train(data_dir: str, imputation_threshold: float = 0.2) -> tuple[n
     header_reduced_no_nan = [name for name, keep in zip(header_reduced, ~mask_nan) if keep]
 
     data_x_nan_val_imputed = np.hstack(processed_cols)
-    print(f"Kept {(~mask_nan).sum()} of {len(mask_nan)} columns -> {data_x_nan_val_imputed.shape[1]} features.")
+    print(f"Kept {(~mask_nan).sum()} of {len(mask_nan)} columns corresponding to {data_x_nan_val_imputed.shape[1]} features.")
     print(header_reduced_no_nan)
 
     # Transform labels from -1, 1 to 0, 1
