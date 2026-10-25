@@ -12,6 +12,9 @@ from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import os
 import sklearn
+import time
+import random
+from datetime import datetime
 
 from helpers import *
 from helpers_analysis import * 
@@ -84,14 +87,14 @@ def display_confusion_matrix(cm, cm_ratio, title) :
     ax[0].set_title(f"confusion_matrix_{title}")
 
     #Heatmap ratio
-    im = ax[1].imshow(cm, cmap='Blues', origin='upper')
+    im = ax[1].imshow(cm_ratio, cmap='Blues', origin='upper')
     fig.colorbar(im, ax=ax[1])
 
     #Plot values and type
-    for i in range(cm.shape[1]):
-        for j in range(cm.shape[1]):
+    for i in range(cm_ratio.shape[1]):
+        for j in range(cm_ratio.shape[1]):
             ax[1].text(
-                j, i, f'{cm[i, j]:.0f} \n {L_labels[i][j]}',
+                j, i, f'{cm_ratio[i, j]:.3f} \n {L_labels[i][j]}',
                 ha='center',
                 va='center',
                 color='black'
@@ -191,3 +194,148 @@ def reg_logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, lambda_, initial_w, ma
     loss = np.mean(-y_tr*(tx_tr@w) + np.log(1 + np.exp(tx_tr@w)))
     
     return w, losses_train, losses_test
+
+
+
+####################### kNN UTILS #######################
+
+def kNN_custom(x_tr, y_tr, x_te, N) :
+    n = len(x_te)
+    y_te_pred = np.zeros((n, 1))
+    for i in range(n) :
+        x_te_case = x_te[i, :]
+
+        #Distances
+        distances = np.linalg.norm(x_tr - x_te_case, axis=1)
+        
+        #N indices of min distance
+        indices = np.argpartition(distances, N - 1)[:N]
+
+        #Counting of classes corresponding to above indices
+        values, counts = np.unique(y_tr[indices], return_counts=True)
+
+        #Class prediction
+        class_pred = values[np.argmax(counts)]  
+        y_te_pred[i,0] = class_pred
+    
+    return(y_te_pred)
+
+def kNN_custom_vectorized(x_tr, y_tr, x_te, N, batch_size=100):
+    x_tr = np.asarray(x_tr)
+    x_te = np.asarray(x_te)
+    y_tr = np.asarray(y_tr).ravel()
+
+    n_test = len(x_te)
+    y_te_pred = np.empty((n_test, 1), dtype=y_tr.dtype)
+
+    # Process test samples in batches
+    for start in range(0, n_test, batch_size):
+        end = min(start + batch_size, n_test)
+        x_batch = x_te[start:end]
+
+        # Compute squared Euclidean distances without a 3D array
+        distances = (
+            np.sum(x_batch**2, axis=1)[:, None]
+            + np.sum(x_tr**2, axis=1)[None, :]
+            - 2 * x_batch @ x_tr.T
+        )
+
+        # Select N nearest neighbors
+        indices = np.argpartition(
+            distances, N - 1, axis=1
+        )[:, :N]
+
+        # Majority vote
+        for i, idx in enumerate(indices):
+            values, counts = np.unique(y_tr[idx], return_counts=True)
+            y_te_pred[start + i, 0] = values[np.argmax(counts)]
+
+    return y_te_pred
+
+
+
+####################### SVM utils #######################
+
+def calculate_primal_objective(y, X, w, lambda_):
+    """compute the full cost (the primal objective, equation (1) in the exercise pdf),
+        that is loss plus regularizer.
+
+    Args:
+        X: the full dataset matrix, shape = (num_examples, num_features)
+        y: the corresponding +1 or -1 labels, shape = (num_examples)
+        w: shape = (num_features)
+
+    Returns:
+        scalar, non-negative
+
+    """
+    N = len(y)
+    cost = lambda_/2 * np.linalg.norm(w)**2
+    for i in range(N) :
+        cost += 1/N * np.maximum(0, 1 - y[i] * X[i,:].T @ w)
+    return(cost)
+
+def calculate_accuracy(y, X, w):
+    """compute the accuracy on the given dataset (X, y) using the model w.
+
+    Args:
+        X: the full dataset matrix, shape = (num_examples, num_features)
+        y: the corresponding +1 or -1 labels, shape = (num_examples)
+        w: shape = (num_features)
+
+    Returns:
+        scalar, between 0 and 1
+    """
+    y_pred = np.sign(X @ w)
+    TP_TN = np.sum(y + y_pred)/2
+    accuracy = (TP_TN)/len(y)
+    return(accuracy)
+
+def calculate_stochastic_gradient(y, X, w, lambda_, n, num_examples):
+    """compute the stochastic gradient of loss plus regularizer.
+
+    Args:
+        X: the dataset matrix, shape = (num_examples, num_features)
+        y: the corresponding +1 or -1 labels, shape = (num_examples)
+        w: shape = (num_features)
+        lambda_: positive scalar number
+        n: the index of the (one) datapoint we have sampled
+        num_examples: N
+
+    Returns:
+        numpy array, shape = (num_features)
+    """
+
+    N = num_examples
+    margin = y[n] * (X[n, :].T @ w)
+    gradient = lambda_ * w - y[n] * X[n, :] * (margin < 1)
+    return(gradient)
+
+def sgd_for_svm_demo(y, X, max_iter, gamma, lambda_):
+    xs = np.unique(np.round(np.logspace(0, 5, 201)))[:-1]
+
+    num_examples, num_features = X.shape
+    w = np.zeros(num_features)
+    costs = []
+    start = time.time()
+
+    for it in range(max_iter):
+        # n = sample one data point uniformly at random data from x
+        n = random.randint(0, num_examples - 1)
+
+        grad = calculate_stochastic_gradient(y, X, w, lambda_, n, num_examples)
+        w -= gamma / (it + 1) * grad
+
+        cost = calculate_primal_objective(y, X, w, lambda_)
+        costs.append(cost)
+
+    end = time.time()
+
+    print(
+        "Final training accuracy = {l} %".format(
+            l=np.round(100 * calculate_accuracy(y, X, w), 2)
+        )
+    )
+    print("Training time: " + str(np.round(end - start, 1)) + " seconds ")
+
+    return(w, costs)
