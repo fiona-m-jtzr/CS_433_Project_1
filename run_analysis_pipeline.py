@@ -251,7 +251,7 @@ if launch_pure_log == True :
         "predictions/y_test_pred_log.csv",
         y_submission_pred_log,
         delimiter=",",
-        header="Id, Prediction",
+        header="Id,Prediction",
         comments="",
         fmt="%d"
     )
@@ -273,7 +273,7 @@ if launch_reg_log == True :
         "predictions/y_test_pred_log_reg.csv",
         y_submission_pred_log_reg,
         delimiter=",",
-        header="Id, Prediction",
+        header="Id,Prediction",
         comments="",
         fmt="%d"
     )
@@ -294,7 +294,7 @@ if launch_pure_log_sgd == True :
         "predictions/y_test_pred_log_sgd.csv",
         y_submission_pred_log_sgd,
         delimiter=",",
-        header="Id, Prediction",
+        header="Id,Prediction",
         comments="",
         fmt="%d"
     )
@@ -316,7 +316,7 @@ if launch_reg_log_sgd == True :
         "predictions/y_test_pred_log_reg_sgd.csv",
         y_submission_pred_log_reg_sgd,
         delimiter=",",
-        header="Id, Prediction",
+        header="Id,Prediction",
         comments="",
         fmt="%d"
     )
@@ -335,7 +335,7 @@ if launch_SVM == True :
         "predictions/y_test_pred_SVM.csv",
         y_submission_pred_SVM,
         delimiter=",",
-        header="Id, Prediction",
+        header="Id,Prediction",
         comments="",
         fmt="%d"
     )
@@ -354,7 +354,7 @@ if launch_kNN == True :
         "predictions/y_test_pred_kNN.csv",
         y_submission_pred_kNN,
         delimiter=",",
-        header="Id, Prediction",
+        header="Id,Prediction",
         comments="",
         fmt="%d"
     )
