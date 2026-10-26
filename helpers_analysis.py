@@ -65,7 +65,7 @@ def confusion_matrix_custom(y_te, y_te_pred) :
 def display_confusion_matrix(cm, cm_ratio, title) :
     """Display confusion matrix only with matplotlib. Convention: positive when class 1 (ie heart disease)"""
     
-    L_labels = [["True Positive", "False Negative"], ["False Positive", "False positive"]]
+    L_labels = [["True Positive", "False Negative"], ["False Positive", "True Negative"]]
 
     #Figure creation
     fig, ax = plt.subplots(1, 2, figsize=(12, 5))
