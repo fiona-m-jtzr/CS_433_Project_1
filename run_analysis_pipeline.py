@@ -29,10 +29,11 @@ print("Imports: OK\n")
 ####################### PARAMS TO CHANGE #######################
 
 #Data directory
-DATA_DIR = ""
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "dataset")
 
 #Preprocessing
-imputation = False
+imputation_threshold = 0.01
 downsample = True
 
 #Pipeline choice
@@ -54,11 +55,11 @@ if __name__ == "__main__" :
     #### LOAD AND PREPROCESS ####
 
     #Train
-    x_train, y_train, cont_params, cat_params, mask = load_data_train(DATA_DIR, imputation=imputation)
+    x_train, y_train, cont_params, cat_params, mask_nan, missing_codes, zero_codes = load_data_train(DATA_DIR, imputation_threshold)
     print("Load and preprocess train: OK \n")
 
     #Test
-    x_test = load_data_test(DATA_DIR, cont_params, cat_params, mask, imputation=imputation)
+    x_test = load_data_test(DATA_DIR, cont_params, cat_params, mask_nan, missing_codes, zero_codes)
     print("Load and preprocess test: OK \n")
 
 
