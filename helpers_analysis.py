@@ -85,6 +85,12 @@ def display_confusion_matrix(cm, cm_ratio, title) :
             )
 
     ax[0].set_title(f"confusion_matrix_{title}")
+    ax[0].set_xticks([0, 1])
+    ax[0].set_xticklabels([1, -1])
+    ax[0].set_xlabel("Prediction")
+    ax[0].set_yticks([0, 1])
+    ax[0].set_yticklabels([1, -1])
+    ax[0].set_ylabel("Truth")
 
     #Heatmap ratio
     im = ax[1].imshow(cm_ratio, cmap='Blues', origin='upper')
@@ -101,6 +107,12 @@ def display_confusion_matrix(cm, cm_ratio, title) :
             )
 
     ax[1].set_title(f"confusion_matrix_ratio_{title}")
+    ax[1].set_xticks([0, 1])
+    ax[1].set_xticklabels([1, -1])
+    ax[1].set_xlabel("Prediction")
+    ax[1].set_yticks([0, 1])
+    ax[1].set_yticklabels([1, -1])
+    ax[1].set_ylabel("Truth")
 
     #Metrics computations and show in title
     TP = cm[0,0]
