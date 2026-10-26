@@ -102,6 +102,16 @@ def display_confusion_matrix(cm, cm_ratio, title) :
 
     ax[1].set_title(f"confusion_matrix_ratio_{title}")
 
+    #Metrics computations and show in title
+    TP = cm[0,0]
+    FN = cm[0,1]
+    FP = cm[1,0]
+    TN = cm[1,1]
+    F1_score = (2 * TP)/(2 * TP + FP + FN)
+    accuracy_score = (TP + TN)/(TP + FN + FP + TN)
+
+    fig.suptitle(f"{title}: F1 = {F1_score:.2f}, accuracy = {accuracy_score:.2f}")
+
     fig.savefig(f"image/confusion_matrix_{title}.png", dpi=300)
     plt.show()
 

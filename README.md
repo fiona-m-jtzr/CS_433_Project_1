@@ -14,7 +14,7 @@ https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
 - run_analysis_pipeline.py : main file for classification training pipeline and prediction. The user can custom pipeline in section "PARAMS TO CHANGE".
 - helpers.py : contains utils functions for preprocessing (loading, imputing depending on percentage of NaNs, downsampling, etc.).
 - dictionnaries.py : operations to do on the features. 
-- helpers_analysis.py : contains utils functions for training classifier (logistic SGD, SVM, kNN).
+- helpers_analysis.py : contains utils functions for training classifier (logistic SGD, SVM, kNN) and plot the results (losses and confusion matrices). 
 - implementations.py : contains the 6 functions assigned to be implemented.
 
 # Folders description
