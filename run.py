@@ -13,7 +13,7 @@ from implementations import *
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "dataset")
 
-x_train, y_train, cont_params, cat_params, mask_nan, missing_codes, zero_codes = load_data_train(DATA_DIR)
+x_train, y_train, cont_params, cat_params, mask_nan, missing_codes, zero_codes = load_data_train(DATA_DIR, imputation_threshold=0.1)
 x_test = load_data_test(DATA_DIR, cont_params, cat_params, mask_nan, missing_codes, zero_codes)
 
 assert x_train.shape[1] == x_test.shape[1]
