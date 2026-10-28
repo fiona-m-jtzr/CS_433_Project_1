@@ -29,3 +29,9 @@ https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
 - Put the datasets in dataset folder
 - Activate python environment
 - Launch run.py
+
+# LLM usage disclaimer
+Parts of this code were developed with the assistance of a large language model (Claude, Anthropic). The LLM was used for:
+#   - debugging 
+#   - suggesting improved versions of methods/functions for computational speedup
+#   - hyperparameter tuning
