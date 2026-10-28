@@ -27,5 +27,5 @@ https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
 
 # User guide
 - Put the datasets in dataset folder
-- activate python environment
+- Activate python environment
 - Launch run.py
