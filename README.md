@@ -2,7 +2,7 @@
 This repository inventoriates our analyses on the provided health dataset.
 
 # Goal
-The goal is to make the best predictions and win the competition
+The goal is to provide good predictions of the risk of cardiovascular diseases.
 
 # Website
 The competition website is : https://www.aicrowd.com/challenges/epfl-machine-learning-project-1
@@ -23,9 +23,7 @@ https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
 - predictions : contains .csv submission file for each classification technique. 
 
 # Best submissions until now
-- 26/10/2026 : F1 = 0.279, accuracy = 0.611
-- 26/10/2026 : F1 = 0.265, accuracy = 0.675
-- 26/10/2026 : F1 = 0.225, accuracy = 0.507
+- 29/10/2026 : F1 = 0.424, accuracy = 0.870
 
 # User guide
 - Put the datasets in dataset folder
