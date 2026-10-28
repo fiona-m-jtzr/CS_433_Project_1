@@ -129,6 +129,52 @@ def display_confusion_matrix(cm, cm_ratio, title) :
 
 
 
+####################### ROC curve UTILS #######################
+
+def TP_FP_ratio_pred(y_te, tx_te, w_log, thresh) :
+    #Class choice
+    logistic_mask_log = sigmoid(tx_te @ w_log) >= thresh
+    y_te_pred_log = np.zeros((np.shape(tx_te)[0],1))
+    y_te_pred_log[logistic_mask_log] = 1
+
+    #Confusion matrix
+    confusion_matrix_log, _ = confusion_matrix_custom(y_te, y_te_pred_log)
+
+    #True Positive and False Positive rates
+    TP = confusion_matrix_log[0,0]
+    FP = confusion_matrix_log[1,0]
+    FN = confusion_matrix_log[0,1]
+    TN = confusion_matrix_log[1,1]
+    TP_ratio = TP/(TP + FN)
+    FP_ratio = FP/(FP + TN)
+    return(TP_ratio, FP_ratio)
+
+def ROC_curve_thresh(y_te, tx_te, w_log, title, a=0.01, b=1, N=100) :
+    #List of threshholds to explore
+    L_thresh = np.linspace(a, b, N)
+
+    #True Positive and False Positive rates lists
+    L_TP_ratio = []
+    L_FP_ratio = []
+
+    #Exploration loop
+    for thresh in L_thresh :
+        TP_ratio, FP_ratio = TP_FP_ratio_pred(y_te, tx_te, w_log, thresh)
+        L_TP_ratio.append(TP_ratio)
+        L_FP_ratio.append(FP_ratio)
+
+    #Display
+    plt.scatter(L_FP_ratio, L_TP_ratio, label="ROC curve")
+    plt.plot(np.linspace(0,1,100), np.linspace(0,1,100), color="red")
+    plt.title(f"{title}: ROC curve")
+    plt.xlabel("False Positive rate")
+    plt.ylabel("True Positive rate")
+    plt.legend(loc="lower left")
+    plt.savefig(f"image/ROC_{title}.png", dpi=300)
+    plt.show()
+
+
+
 ####################### LOGISTIC REGRESSION UTILS #######################
 
 def sigmoid(t):
