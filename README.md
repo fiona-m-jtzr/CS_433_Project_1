@@ -11,7 +11,7 @@ The competition website is : https://www.aicrowd.com/challenges/epfl-machine-lea
 https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
 
 # Files description
-- run_analysis_pipeline.py : main file for classification training pipeline and prediction. The user can custom pipeline in section "PARAMS TO CHANGE".
+- run.py : main file for classification training pipeline and prediction. The user can custom pipeline in section "PARAMS TO CHANGE".
 - helpers.py : contains utils functions for preprocessing (loading, imputing depending on percentage of NaNs, downsampling, etc.).
 - dictionnaries.py : operations to do on the features. 
 - helpers_analysis.py : contains utils functions for training classifier (logistic SGD, SVM, kNN) and plot the results (losses and confusion matrices). 
@@ -26,3 +26,8 @@ https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
 - 26/10/2026 : F1 = 0.279, accuracy = 0.611
 - 26/10/2026 : F1 = 0.265, accuracy = 0.675
 - 26/10/2026 : F1 = 0.225, accuracy = 0.507
+
+# User guide
+- Put the datasets in dataset folder
+- activate python environment
+- Launch run.py
