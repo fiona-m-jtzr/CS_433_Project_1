@@ -28,11 +28,11 @@ https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
 # User guide
 - Put the datasets in dataset folder
 - Activate python environment
-- Launch run.py
+- Launch run.py and adjust parameters to your needs. Generated images and predictions can then be found in the corresponding folders.
 
 # LLM usage disclaimer
 Parts of this code were developed with the assistance of a large language model (Claude, Anthropic). The LLM was used for:
 - debugging
-- suggesting improved versions of methods/functions for computational speedup
+- suggesting improved versions of methods/functions (especially but not only the function used for threshold tuning)
 - hyperparameter tuning
 - feature analysis in training dataset
