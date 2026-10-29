@@ -23,12 +23,12 @@ https://www.overleaf.com/project/6ab150541dce52f1539cb0d1
 - predictions : contains .csv submission file for each classification technique. 
 
 # Best submissions until now
-- 29/10/2026 : F1 = 0.424, accuracy = 0.870
+- 29/10/2026 : F1 = 0.433, accuracy = 0.872
 
 # User guide
 - Put the datasets in dataset folder
 - Activate python environment
-- Launch run.py and adjust parameters to your needs. Generated images and predictions can then be found in the corresponding folders.
+- Launch run.py and adjust parameters to your needs. Generated images and predictions can be found in the corresponding folders.
 
 # LLM usage disclaimer
 Parts of this code were developed with the assistance of a large language model (Claude, Anthropic). The LLM was used for:
