@@ -8,12 +8,9 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 import time
-import random
-from datetime import datetime
 
-from helpers import *
+from helpers_preprocessing import *
 from helpers_analysis import * 
 from implementations import * 
 
@@ -126,52 +123,6 @@ def display_confusion_matrix(cm, cm_ratio, title) :
 
 
 
-####################### ROC curve UTILS #######################
-
-def TP_FP_ratio_pred(y_te, tx_te, w_log, thresh) :
-    #Class choice
-    logistic_mask_log = sigmoid(tx_te @ w_log) >= thresh
-    y_te_pred_log = np.zeros((np.shape(tx_te)[0],1))
-    y_te_pred_log[logistic_mask_log] = 1
-
-    #Confusion matrix
-    confusion_matrix_log, _ = confusion_matrix_custom(y_te, y_te_pred_log)
-
-    #True Positive and False Positive rates
-    TP = confusion_matrix_log[0,0]
-    FP = confusion_matrix_log[1,0]
-    FN = confusion_matrix_log[0,1]
-    TN = confusion_matrix_log[1,1]
-    TP_ratio = TP/(TP + FN)
-    FP_ratio = FP/(FP + TN)
-    return(TP_ratio, FP_ratio)
-
-def ROC_curve_thresh(y_te, tx_te, w_log, title, a=0.01, b=1, N=100) :
-    #List of threshholds to explore
-    L_thresh = np.linspace(a, b, N)
-
-    #True Positive and False Positive rates lists
-    L_TP_ratio = []
-    L_FP_ratio = []
-
-    #Exploration loop
-    for thresh in L_thresh :
-        TP_ratio, FP_ratio = TP_FP_ratio_pred(y_te, tx_te, w_log, thresh)
-        L_TP_ratio.append(TP_ratio)
-        L_FP_ratio.append(FP_ratio)
-
-    #Display
-    plt.scatter(L_FP_ratio, L_TP_ratio, label="ROC curve")
-    plt.plot(np.linspace(0,1,100), np.linspace(0,1,100), color="red")
-    plt.title(f"{title}: ROC curve")
-    plt.xlabel("False Positive rate")
-    plt.ylabel("True Positive rate")
-    plt.legend(loc="lower left")
-    plt.savefig(f"image/ROC_{title}.png", dpi=300)
-    plt.show()
-
-
-
 ####################### LOGISTIC REGRESSION UTILS #######################
 
 def sigmoid(t):
@@ -189,43 +140,40 @@ def sigmoid(t):
 
 ####################### LOGISTIC REGRESSION SGD #######################
 
-def logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, initial_w, max_iters, gamma):
+def logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, initial_w, max_iters, gamma, rng, log_every=1000):
     """Implementation of logistic regression.
-
-    Args:
-        y:  shape=(N, 1)
-        tx: shape=(N, D)
-        initial_w:  shape=(D, 1)
-        max_iters: scalar denoting the total number of iterations
-        gamma: scalar denoting the stepsize
-
-
-    Returns:
-        w: numpy array of shape=(D, ) denoting the final model parameters
-        loss: scalar denoting final loss value
-    """
-
+    
+        Args:
+            y:  shape=(N, 1)
+            tx: shape=(N, D)
+            initial_w:  shape=(D, 1)
+            max_iters: scalar denoting the total number of iterations
+            gamma: scalar denoting the stepsize
+    
+    
+        Returns:
+            w: numpy array of shape=(D, ) denoting the final model parameters
+            loss: scalar denoting final loss value
+        """
     w = initial_w
     N = len(y_tr)
-    losses_train = []
-    losses_test = []
-    for n_iter in range(max_iters):
+    losses_train, losses_test = [], []
 
-        #Index random choice and update
-        idx = np.random.randint(N)
-        grad = tx_tr[idx].T*(1/(1+np.exp(-tx_tr[idx]*w)) - y_tr[idx])/N
+    for n_iter in range(max_iters):
+        idx = rng.integers(N)
+        xi = tx_tr[idx]
+        grad = xi * (1 / (1 + np.exp(-(xi @ w))) - y_tr[idx])
         w = w - gamma * grad
 
-        #Loss computations
-        loss_train = np.mean(-y_tr*(tx_tr@w) + np.log(1 + np.exp(tx_tr@w)))
-        losses_train.append(loss_train)
-        loss_test = np.mean(-y_te*(tx_te@w) + np.log(1 + np.exp(tx_te@w)))
-        losses_test.append(loss_test)
-    
+        if n_iter % log_every == 0:
+            z_tr, z_te = tx_tr @ w, tx_te @ w
+            losses_train.append(np.mean(np.logaddexp(0, z_tr) - y_tr * z_tr))
+            losses_test.append(np.mean(np.logaddexp(0, z_te) - y_te * z_te))
+
     return w, losses_train, losses_test
 
 
-def reg_logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, lambda_, initial_w, max_iters, gamma):
+def reg_logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, lambda_, initial_w, max_iters, gamma, rng, log_every=1000):
     """Implementation of logistic regression.
 
     Args:
@@ -240,24 +188,21 @@ def reg_logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, lambda_, initial_w, ma
         w: numpy array of shape=(D, ) denoting the final model parameters
         loss: scalar denoting final loss value
     """
-
     w = initial_w
     N = len(y_tr)
-    losses_train = []
-    losses_test = []
+    losses_train, losses_test = [], []
+
     for n_iter in range(max_iters):
-        idx = np.random.randint(N)
-        grad = tx_tr[idx].T*(1/(1+np.exp(-tx_tr[idx]*w)) - y_tr[idx])/N + 2 * lambda_ * w 
+        idx = rng.integers(N)
+        xi = tx_tr[idx]
+        grad = xi * (1 / (1 + np.exp(-(xi @ w))) - y_tr[idx]) + 2 * lambda_ * w
         w = w - gamma * grad
 
-        #Loss computations
-        loss_train = np.mean(-y_tr*(tx_tr@w) + np.log(1 + np.exp(tx_tr@w)))
-        losses_train.append(loss_train)
-        loss_test = np.mean(-y_te*(tx_te@w) + np.log(1 + np.exp(tx_te@w)))
-        losses_test.append(loss_test)
+        if n_iter % log_every == 0:
+            z_tr, z_te = tx_tr @ w, tx_te @ w
+            losses_train.append(np.mean(np.logaddexp(0, z_tr) - y_tr * z_tr))
+            losses_test.append(np.mean(np.logaddexp(0, z_te) - y_te * z_te))
 
-    loss = np.mean(-y_tr*(tx_tr@w) + np.log(1 + np.exp(tx_tr@w)))
-    
     return w, losses_train, losses_test
 
 
@@ -334,11 +279,10 @@ def calculate_primal_objective(y, X, w, lambda_):
         scalar, non-negative
 
     """
-    N = len(y)
-    cost = lambda_/2 * np.linalg.norm(w)**2
-    for i in range(N) :
-        cost += 1/N * np.maximum(0, 1 - y[i] * X[i,:].T @ w)
-    return(cost)
+    hinge_loss = np.clip(1 - y*(X@w), 0, np.inf)
+    loss = np.mean(hinge_loss) + lambda_/2 * np.sum(w**2)
+    
+    return loss
 
 def calculate_accuracy(y, X, w):
     """compute the accuracy on the given dataset (X, y) using the model w.
@@ -351,12 +295,12 @@ def calculate_accuracy(y, X, w):
     Returns:
         scalar, between 0 and 1
     """
-    y_pred = np.sign(X @ w)
-    TP_TN = np.sum(y + y_pred)/2
-    accuracy = (TP_TN)/len(y)
+    prediction = ((X @ w > 0) * 2) - 1 
+    accuracy = np.mean(prediction == y)
+
     return(accuracy)
 
-def calculate_stochastic_gradient(y, X, w, lambda_, n, num_examples):
+def calculate_stochastic_gradient(y, X, w, lambda_, n):
     """compute the stochastic gradient of loss plus regularizer.
 
     Args:
@@ -371,36 +315,59 @@ def calculate_stochastic_gradient(y, X, w, lambda_, n, num_examples):
         numpy array, shape = (num_features)
     """
 
-    N = num_examples
     margin = y[n] * (X[n, :].T @ w)
     gradient = lambda_ * w - y[n] * X[n, :] * (margin < 1)
     return(gradient)
 
-def sgd_for_svm_demo(y, X, max_iter, gamma, lambda_):
-    xs = np.unique(np.round(np.logspace(0, 5, 201)))[:-1]
+
+
+def sgd_for_svm_demo(y, X, max_iter, gamma, lambda_, rng):
+    xs = np.unique(np.round(np.logspace(0, np.log10(max_iter), 201))).astype(int)
+    log_iters = set(xs.tolist())
 
     num_examples, num_features = X.shape
     w = np.zeros(num_features)
-    costs = []
+    costs, logged = [], []
     start = time.time()
 
     for it in range(max_iter):
-        # n = sample one data point uniformly at random data from x
-        n = random.randint(0, num_examples - 1)
-
-        grad = calculate_stochastic_gradient(y, X, w, lambda_, n, num_examples)
+        n = rng.integers(num_examples)
+        grad = calculate_stochastic_gradient(y, X, w, lambda_, n)
         w -= gamma / (it + 1) * grad
 
-        cost = calculate_primal_objective(y, X, w, lambda_)
-        costs.append(cost)
+        if it in log_iters:
+            costs.append(calculate_primal_objective(y, X, w, lambda_))
+            logged.append(it)
 
-    end = time.time()
+    print("Final training accuracy = {} %".format(
+        np.round(100 * calculate_accuracy(y, X, w), 2)))
+    print("Training time: " + str(np.round(time.time() - start, 1)) + " seconds")
 
-    print(
-        "Final training accuracy = {l} %".format(
-            l=np.round(100 * calculate_accuracy(y, X, w), 2)
-        )
-    )
-    print("Training time: " + str(np.round(end - start, 1)) + " seconds ")
+    return w, costs, np.array(logged)
 
-    return(w, costs)
+def plot_SVM(iters, costs, title="SVM", save=True):
+    plt.figure()
+    plt.title(f"{title}: SGD on primal objective")
+    plt.loglog(iters, costs)
+    plt.xlabel("Number of iterations")
+    plt.ylabel("Primal objective")
+    if save:
+        plt.savefig("image/losses_SVM.png", dpi=300)   # before show()
+    plt.show()
+
+
+####################### Threshold logistic regression #######################
+
+def threshold_tuning(y, probs, grid=np.linspace(0.02, 0.6, 117)):
+    best_t, best_f1 = 0.5, -1
+    for t in grid:
+        pred = probs >= t
+        tp = np.sum((pred == 1) & (pred == y))
+        fp = np.sum((pred == 1) & (pred != y))
+        fn = np.sum((pred == 0) & (pred != y))
+        f1 = 2*tp / (2*tp + fp + fn) if tp > 0 else 0
+        if f1 > best_f1: best_t, best_f1 = t, f1
+    return best_t, best_f1
+
+
+                     

@@ -12,11 +12,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import time
-import random
-from datetime import datetime
 
-from helpers import *
+from helpers_preprocessing import *
 from helpers_analysis import * 
 from implementations import *  
 print("Imports: OK\n")
@@ -29,23 +26,21 @@ print("Imports: OK\n")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "dataset")
 
+SEED = 0
+ss = np.random.SeedSequence(SEED)
+rng_split, rng_down, rng_sgd1, rng_sgd2, rng_svm = [np.random.default_rng(s) for s in ss.spawn(5)]
+
 #Preprocessing
-imputation_threshold = 0.01
+imputation_threshold = 0.2
 downsample = True
 
 #Pipeline choice
-launch_pure_log = True
+launch_pure_log = False
 launch_reg_log = False
-launch_pure_log_sgd = False
-launch_reg_log_sgd = False
-launch_kNN = False
-launch_SVM = False
-
-#Threshhold_choices
-thresh_pure_log = 0.125
-thresh_reg_log = 0.5
-thresh_pure_log_sgd = 0.5
-thresh_reg_log_sgd = 0.5
+launch_pure_log_sgd = True
+launch_reg_log_sgd = True
+launch_kNN = True
+launch_SVM = True
 
 
 ####################### ANALYSIS PIPELINE #######################
@@ -72,23 +67,22 @@ if __name__ == "__main__" :
     #Dtype (to change in case of being unable to allocate matrices with large type. Can be changed to np.float32)
     dtype_array = np.float32
 
-    #Downsampling
-    if downsample == True :
-        x_train, y_train = downsample_classes(x_train, y_train, random_state=0)
-        print("Downsample: OK \n")
-
     #Train/validation split
     #Mask definition
-    rng = np.random.default_rng()
     n = len(y_train)
-    ratio_mask = 33
-    mask = rng.random(n) >= ratio_mask / 100
+    ratio_mask = 20
+    mask = rng_split.random(n) >= ratio_mask / 100
 
     #Train/validation split
     x_tr = x_train[mask]
     y_tr = y_train[mask]
     x_te = x_train[~mask]
     y_te = y_train[~mask]
+
+    #Downsampling only training set
+    if downsample == True :
+        x_tr, y_tr = downsample_classes(x_tr, y_tr, rng_down)
+        print("Downsample: OK \n")
 
     #Add intercept
     tx_tr = np.c_[np.ones((x_tr.shape[0], 1)), x_tr]
@@ -102,18 +96,27 @@ if __name__ == "__main__" :
 
 
     #### LOGISTIC REGRESSION ####
+
     #Optimization params
-    max_iters = 500
-    gamma = 0.01
-    lambda_ = 0.5
+    max_iters = 1000
+    gamma = 0.001
+    lambda_ = 1e-2
+    print("Parameters for logistic regression:\n")
+    print(f"max_iters = {max_iters} \n")
+    print(f"gamma = {gamma} \n")
+    print(f"lambda = {lambda_} \n")
 
     #Pure logistic regression
     if launch_pure_log == True :
         w_log, loss_log = logistic_regression(y_tr, tx_tr, initial_w, max_iters, gamma)
         print("Pure logistic regression: OK \n")
 
-        #Class choice
-        logistic_mask_log = sigmoid(tx_te @ w_log) >= thresh_pure_log
+        #Tune threshold
+        probs_val_log = sigmoid(tx_te @ w_log).ravel()
+        thresh_log, f1_val = threshold_tuning(y_te, probs_val_log)
+        print(f"Pure log: best threshold = {thresh_log:.3f}, validation F1 = {f1_val:.3f}")
+        logistic_mask_log = sigmoid(tx_te @ w_log) >= thresh_log
+        
         y_te_pred_log = np.zeros((np.shape(tx_te)[0],1))
         y_te_pred_log[logistic_mask_log] = 1
 
@@ -121,41 +124,54 @@ if __name__ == "__main__" :
         confusion_matrix_log, confusion_matrix_ratio_log = confusion_matrix_custom(y_te, y_te_pred_log)
         display_confusion_matrix(confusion_matrix_log, confusion_matrix_ratio_log, "pure_logistic")
 
-        #ROC curve
-        ROC_curve_thresh(y_te, tx_te, w_log, "pure_log", a=0.01, b=0.25)
-
 
     #Penalized logistic regression
     if launch_reg_log == True :
         w_log_reg, loss_log_reg = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma)
         print("Penalized logistic regression: OK \n")
 
-        #Class choice
-        logistic_mask_log_reg = sigmoid(tx_te @ w_log_reg) >= thresh_reg_log
+        #Tune threshold
+        probs_val_log_reg = sigmoid(tx_te @ w_log_reg).ravel()
+        thresh_log_reg, f1_val = threshold_tuning(y_te, probs_val_log_reg)
+        print(f"Reg log: best threshold = {thresh_log_reg:.3f}, validation F1 = {f1_val:.3f}")
+        logistic_mask_log_reg = sigmoid(tx_te @ w_log_reg) >= thresh_log_reg
+
+
         y_te_pred_log_reg = np.zeros((np.shape(tx_te)[0],1))
         y_te_pred_log_reg[logistic_mask_log_reg] = 1
 
         #Confusion matrix display
         confusion_matrix_log_reg, confusion_matrix_ratio_log_reg = confusion_matrix_custom(y_te, y_te_pred_log_reg)
-        display_confusion_matrix(confusion_matrix_log_reg, confusion_matrix_ratio_log, "reg_logistic")
+        display_confusion_matrix(confusion_matrix_log_reg, confusion_matrix_ratio_log_reg, "reg_logistic")
 
 
 
     #### LOGISTIC REGRESSION SGD ####
 
+    #Optimization params
+    max_iters_sgd = 500_000
+    gamma_sgd = 0.001
+    lambda_sgd = 1e-2
+
+    print("Parameters for logistic regression SGD:\n")
+    print(f"max_iters = {max_iters_sgd} \n")
+    print(f"gamma = {gamma_sgd} \n")
+    print(f"lambda = {lambda_sgd} \n")
+
     #Pure logistic regression sgd
     if launch_pure_log_sgd == True :
-        #Optimization params
-        max_iters = 500
-        gamma = 2500
-        w_log_sgd, losses_train_log_sgd, losses_test_log_sgd = logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, initial_w, max_iters, gamma)
+        w_log_sgd, losses_train_log_sgd, losses_test_log_sgd = logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, initial_w, max_iters_sgd, gamma_sgd, rng_sgd1)
         print("Pure logistic regression SGD: OK \n")
 
         #Losses display
         display_losses(losses_train_log_sgd, losses_test_log_sgd, "logistic_SGD")
 
-        #Class choice
-        logistic_mask_log_sgd = sigmoid(tx_te @ w_log_sgd) >= thresh_pure_log_sgd
+        #Tune threshold
+        probs_val_log_sgd = sigmoid(tx_te @ w_log_sgd).ravel()
+        thresh_log_sgd, f1_val = threshold_tuning(y_te, probs_val_log_sgd)
+        print(f"SGD log: best threshold = {thresh_log_sgd:.3f}, validation F1 = {f1_val:.3f}")
+        logistic_mask_log_sgd = sigmoid(tx_te @ w_log_sgd) >= thresh_log_sgd
+
         y_te_pred_log_sgd = np.zeros((np.shape(tx_te)[0],1))
         y_te_pred_log_sgd[logistic_mask_log_sgd] = 1
 
@@ -165,18 +181,18 @@ if __name__ == "__main__" :
 
     #Penalized logistic regression sgd
     if launch_reg_log_sgd == True :
-        #Optimization params
-        max_iters = 500
-        gamma = 5000
-        lambda_ = 0.000005
-        w_log_reg_sgd, losses_train_log_reg_sgd, losses_test_log_reg_sgd = reg_logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, lambda_, initial_w, max_iters, gamma)
+        w_log_reg_sgd, losses_train_log_reg_sgd, losses_test_log_reg_sgd = reg_logistic_regression_sgd(y_tr, tx_tr, y_te, tx_te, lambda_sgd, initial_w, max_iters_sgd, gamma_sgd, rng_sgd2)
         print("Penalized logistic regression SGD: OK \n")
 
         #Losses display
         display_losses(losses_train_log_reg_sgd, losses_test_log_reg_sgd, "logistic_regularized_SGD")
 
-        #Class choice
+        #Tune threshold
+        probs_val_reg_log_sgd = sigmoid(tx_te @ w_log_reg_sgd).ravel()
+        thresh_reg_log_sgd, f1_val = threshold_tuning(y_te, probs_val_reg_log_sgd)
+        print(f"SGD reg log: best threshold = {thresh_reg_log_sgd:.3f}, validation F1 = {f1_val:.3f}")
         logistic_mask_log_reg_sgd = sigmoid(tx_te @ w_log_reg_sgd) >= thresh_reg_log_sgd
+
         y_te_pred_log_reg_sgd = np.zeros((np.shape(tx_te)[0],1))
         y_te_pred_log_reg_sgd[logistic_mask_log_reg_sgd] = 1
 
@@ -188,7 +204,11 @@ if __name__ == "__main__" :
     #### kNN ####
     if launch_kNN == True :
         #Prediction
-        y_te_pred_kNN = kNN_custom_vectorized(x_tr, y_tr, x_te, 1)
+        N = 1
+        y_te_pred_kNN = kNN_custom_vectorized(x_tr, y_tr, x_te, N)
+
+        print("Parameters kNN:\n")
+        print(f"N = {N}")
 
         #Confusion matrix
         confusion_matrix_kNN, confusion_matrix_ratio_kNN = confusion_matrix_custom(y_te, y_te_pred_kNN)
@@ -198,31 +218,33 @@ if __name__ == "__main__" :
     #### SVM ####
     if launch_SVM == True :
         #SVM params
-        max_iter = 100
-        gamma = 0.1
-        lambda_ = 0.01
+        max_iter_SVM = 1_000_000
+        gamma_SVM = 100
+        lambda_SVM = 0.01
+
+        print("Parameters for SVM:\n")
+        print(f"max_iters = {max_iter_SVM} \n")
+        print(f"gamma = {gamma_SVM}\n")
+        print(f"lambda = {lambda_SVM}\n")
 
         #SVM training
-        w_SVM, costs = sgd_for_svm_demo(y_tr, x_tr, max_iter, gamma, lambda_)
+        # Labels in {-1, +1} for the hinge loss (SVM only)
+        y_tr_svm = 2 * y_tr - 1
+        w_SVM, costs, iters = sgd_for_svm_demo(y_tr_svm, tx_tr, max_iter_SVM, gamma_SVM, lambda_SVM, rng_svm)
 
-        #Display cost
-        plt.figure()
-        plt.title("SVM costs")
-        plt.plot(costs)
-        plt.xlabel("Number of iterations")
-        plt.ylabel("Primal objective")
-        plt.yscale("log")
-        plt.savefig(f"image/losses_SVM.png", dpi=300)
-        plt.show()
+        # Prediction back to {0, 1} for confusion_matrix_custom
+        scores_val_SVM = (tx_te @ w_SVM).ravel()
 
-        #Prediction
-        y_te_pred_SVM = (np.sign(x_te @ w_SVM) + 1)/2
+        plot_SVM(iters, costs)
 
-        #Confusion matrix
+        grid_SVM = np.percentile(scores_val_SVM, np.linspace(50, 99.5, 200))
+        thresh_SVM, f1_val = threshold_tuning(y_te, scores_val_SVM, grid=grid_SVM)
+        print(f"SVM: best threshold = {thresh_SVM:.3f}, validation F1 = {f1_val:.3f}")
+
+        y_te_pred_SVM = (scores_val_SVM >= thresh_SVM).astype(float).reshape(-1, 1)
+
         confusion_matrix_SVM, confusion_matrix_ratio_SVM = confusion_matrix_custom(y_te, y_te_pred_SVM)
         display_confusion_matrix(confusion_matrix_SVM, confusion_matrix_ratio_SVM, "SVM")
-        
-
 
 
 
@@ -246,7 +268,8 @@ if __name__ == "__main__" :
     if launch_pure_log == True :
 
         #Class choice
-        logistic_mask_log = sigmoid(tx_test @ w_log) >= thresh_pure_log
+        #Only adjust threshold if no downsampling
+        logistic_mask_log = sigmoid(tx_test @ w_log) >= thresh_log
         y_test_pred_log = - np.ones((np.shape(tx_test)[0],1))
         y_test_pred_log[logistic_mask_log] = 1
 
@@ -268,7 +291,7 @@ if __name__ == "__main__" :
     if launch_reg_log == True :
 
         #Class choice
-        logistic_mask_log_reg = sigmoid(tx_test @ w_log_reg) >= thresh_reg_log
+        logistic_mask_log_reg = sigmoid(tx_test @ w_log_reg) >= thresh_log_reg
         y_test_pred_log_reg = - np.ones((np.shape(tx_test)[0],1))
         y_test_pred_log_reg[logistic_mask_log_reg] = 1
 
@@ -289,7 +312,7 @@ if __name__ == "__main__" :
     if launch_pure_log_sgd == True :
 
         #Class choice
-        logistic_mask_log_sgd = sigmoid(tx_test @ w_log_sgd) >= thresh_pure_log_sgd
+        logistic_mask_log_sgd = sigmoid(tx_test @ w_log_sgd) >= thresh_log_sgd
         y_test_pred_log_sgd = - np.ones((np.shape(tx_test)[0],1))
         y_test_pred_log_sgd[logistic_mask_log_sgd] = 1
 
@@ -332,7 +355,7 @@ if __name__ == "__main__" :
     #SVM
     if launch_SVM == True :
         #Prediction
-        y_test_pred_SVM = np.sign(x_test @ w_SVM).reshape(-1,1)
+        y_test_pred_SVM = np.where(tx_test @ w_SVM >= thresh_SVM, 1, -1).reshape(-1, 1)
 
         #Prediction with indices
         y_submission_pred_SVM = np.hstack([indices_array, y_test_pred_SVM])

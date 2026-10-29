@@ -116,7 +116,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         w: numpy array of shape=(D, ) denoting the final model parameters
         loss: scalar denoting final loss value
     """
-
+    
     w = initial_w
     N = len(y)
     for n_iter in range(max_iters):
