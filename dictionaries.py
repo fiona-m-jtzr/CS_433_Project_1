@@ -1,8 +1,5 @@
 """Column removal lists and missing-code exceptions for BRFSS 2015.
-
-Sources: CDC 2015 Calculated Variables document (calculated variables, verified)
-and the 2015 codebook (raw questionnaire variables, marked VERIFY where unsure).
-Names absent from your header are harmless: remove_columns ignores them.
+This file was created using an LLM.
 """
 
 # Does not describe the health of the participant
