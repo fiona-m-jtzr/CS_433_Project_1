@@ -32,15 +32,15 @@ rng_split, rng_down, rng_sgd1, rng_sgd2, rng_svm = [np.random.default_rng(s) for
 
 #Preprocessing
 imputation_threshold = 0.2
-downsample = True
+downsample = False
 
 #Pipeline choice
 launch_pure_log = False
 launch_reg_log = False
 launch_pure_log_sgd = True
-launch_reg_log_sgd = True
-launch_kNN = True
-launch_SVM = True
+launch_reg_log_sgd = False
+launch_kNN = False
+launch_SVM = False
 
 
 ####################### ANALYSIS PIPELINE #######################
@@ -204,7 +204,7 @@ if __name__ == "__main__" :
     #### kNN ####
     if launch_kNN == True :
         #Prediction
-        N = 1
+        N = 10
         y_te_pred_kNN = kNN_custom_vectorized(x_tr, y_tr, x_te, N)
 
         print("Parameters kNN:\n")
@@ -220,7 +220,7 @@ if __name__ == "__main__" :
         #SVM params
         max_iter_SVM = 1_000_000
         gamma_SVM = 100
-        lambda_SVM = 0.01
+        lambda_SVM = 0.0001
 
         print("Parameters for SVM:\n")
         print(f"max_iters = {max_iter_SVM} \n")
@@ -237,9 +237,13 @@ if __name__ == "__main__" :
 
         plot_SVM(iters, costs)
 
-        grid_SVM = np.percentile(scores_val_SVM, np.linspace(50, 99.5, 200))
+        grid_SVM = np.percentile(scores_val_SVM, np.linspace(5, 99.9, 400))
         thresh_SVM, f1_val = threshold_tuning(y_te, scores_val_SVM, grid=grid_SVM)
         print(f"SVM: best threshold = {thresh_SVM:.3f}, validation F1 = {f1_val:.3f}")
+        
+        norm_w = np.linalg.norm(w_SVM[1:])               
+        thresh_dist = thresh_SVM / norm_w                
+        print(f"threshold_distance = {thresh_dist}")
 
         y_te_pred_SVM = (scores_val_SVM >= thresh_SVM).astype(float).reshape(-1, 1)
 
